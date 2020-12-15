@@ -72,9 +72,7 @@ load_file (std::string const& filename)
 
 #ifndef MVE_NO_JPEG_SUPPORT
         try
-        {
-	 std::cout << "return jpeg from image io" << std::endl;
-	 std::cout <<  "image io filename: " << filename << std::endl;
+        { 
 	 return load_jpg_file(filename); 
 	}
         catch (util::FileException& e) { 
@@ -88,7 +86,6 @@ load_file (std::string const& filename)
 #ifndef MVE_NO_TIFF_SUPPORT
         try
         {
-	std::cout << "name file in tiff name in image io: " << filename << std::endl; 
 	return load_tiff_file(filename); 
 	}
         catch (util::FileException& e) { throw; }
@@ -98,8 +95,7 @@ load_file (std::string const& filename)
 #endif
 
         try
-        {  
-		std::cout << "ppm file  image io" <<std::endl;    
+        {   
 		return load_ppm_file(filename); 	
 	}
         catch (util::FileException& e) { throw; }
@@ -138,33 +134,23 @@ load_file_headers (std::string const& filename)
 
 #ifndef MVE_NO_JPEG_SUPPORT
         try
-        {
-	std::cout << "Inside load file header function jpg "<< filename  <<std::endl; 
-	return load_jpg_file_headers(filename); }
-        catch (util::FileException&) {
-	std::cout<< "file exception image io file header " <<std::endl; 
-	throw; }
-        catch (util::Exception&) {
-	 std::cout <<"file header jpeg catch in file header main function image io expection "<< filename <<std::endl;
-	}
+        {return load_jpg_file_headers(filename); }
+        catch (util::FileException&) {throw; }
+        catch (util::Exception&) {}
 #endif
 
 #ifndef MVE_NO_TIFF_SUPPORT
         try
-        { 
-	std::cout << "tiff file header  image io "<< filename << std::endl;
-	return load_tiff_file_headers(filename); }
+        { return load_tiff_file_headers(filename); }
         catch (util::FileException&) { throw; }
         catch (util::Exception&) {}
 #endif
 
         try
-        {
-	std::cout<< "try to load mvei file headers image io" << std::endl; 
-	return load_mvei_file_headers(filename); }
+        {return load_mvei_file_headers(filename); }
         catch (util::FileException&) { throw; }
         catch (util::Exception&) {
-	std::cout<<"try load mvei file header exception" << std::endl;
+	
 	}
     }
     catch (util::FileException& e)
@@ -172,7 +158,7 @@ load_file_headers (std::string const& filename)
         throw util::Exception(filename + ": ", e.what());
     }
 
-    std::cout << "cannot determine image format" <<std::endl;
+   
 
     throw util::Exception(filename, ": Cannot determine image format");
 }
@@ -187,7 +173,6 @@ save_file (ByteImage::ConstPtr image, std::string const& filename)
 #ifndef MVE_NO_JPEG_SUPPORT
     if (fext4 == ".jpg" || fext5 == ".jpeg")
     {
-	std::cout<< "save jpg file image io" << std::endl;
         save_jpg_file(image, filename, 85);
         return;
     }
@@ -476,28 +461,23 @@ save_png_file (ByteImage::ConstPtr image,
 char jpegmes[JMSG_LENGTH_MAX];
 bool jpegerror = false;
 struct jpgErrMgr {
-
 	struct jpeg_error_mgr err;
 	jmp_buf setjmp_buffer;
-
 };
 
 
 void
 jpg_error_handler (j_common_ptr cinfo)
 {
-    //jpeg_error_mgr * myerr = (jpeg_error_mgr*) cinfo->err;
+   
     jpgErrMgr * myerr = (jpgErrMgr*) cinfo->err;	
     (*(cinfo->err->format_message))(cinfo, jpegmes);
     (*(cinfo->err->output_message))(cinfo);
-     std::cout << jpegmes << std::endl;
-    
+      
     jpegerror = true;
 
     longjmp(myerr->setjmp_buffer, 1);
-    //throw std::runtime_error(jpegmes);
-
-    //throw util::Exception("JPEG format not recognized");
+   
 }
 
 void
@@ -511,14 +491,14 @@ jpg_message_handler (j_common_ptr /*cinfo*/, int msg_level)
 ByteImage::Ptr
 load_jpg_file (std::string const& filename, std::string* exif)
 {
-    std::cout << "load_jpg_file function image io " << filename << std::endl;
+   
 
     FILE* fp = std::fopen(filename.c_str(), "rb");
     if (fp == nullptr)
         throw util::FileException(filename, std::strerror(errno));
-    std::cout << "after  fp file point image io " << std::endl;
+   
     jpeg_decompress_struct cinfo;
-    //jpeg_error_mgr jerr;
+    
     jpgErrMgr jerr;
     ByteImage::Ptr image;
     try
@@ -528,53 +508,37 @@ load_jpg_file (std::string const& filename, std::string* exif)
         jerr.err.error_exit = &jpg_error_handler;
         jerr.err.emit_message = &jpg_message_handler;
         if (setjmp(jerr.setjmp_buffer)) {
-                //ostringstream oss;
-               // jpeg_destroy_decompress(&cinfo);
-               // std::fclose(fp);
-                std::cout << "Error in jump image io " << std::endl;
+              
                 throw util::Exception("Jump Exception JPEG error ");
         }
 
         jpeg_create_decompress(&cinfo);
         jpeg_stdio_src(&cinfo, fp);
-        std::cout << "after set up error hander image io" << std::endl;
-
+       
         if (exif)
         {
-	    std::cout<<"inside exif message"<<std::endl;
             /* Request APP1 marker to be saved (this is the EXIF data). */
             jpeg_save_markers(&cinfo, JPEG_APP0 + 1, 0xffff);
         }
-        std::cout << "after if exif  image io" << std::endl;
+       
         /* Read JPEG header. */
 	int ret;
 	try {
         	ret = jpeg_read_header(&cinfo, static_cast<boolean>(false));
 	} catch (...) {
-		std::cout << "throw jpeg read header exception" << std::endl;
+		
 		throw util::Exception("Trying to catch exception in Image io ");
 	}
    
-       /* if (setjmp(jerr.setjmp_buffer)) {
-		//ostringstream oss;
-		jpeg_destroy_decompress(&cinfo);
-       		std::fclose(fp);
-		std::cout << "Error in jump image io " << std::endl;
-		throw util::Exception("Jump Exception JPEG error ");
-	}*/
-
 
         if (jpegerror) {
 		std::cout << "jpeg error is true" << std::endl;
 	}
-        std::cout << ret << " image io ret return " << std::endl;        	
-        std::cout << "after jpeg header read" << std::endl;
+       
         if (ret != JPEG_HEADER_OK) {
-	    std::cout << "Jpeg headers not recognized" <<std::endl;
             throw util::Exception("JPEG header not recognized");
 	}
-        std::cout << "after header exame  image io" << std::endl;
-
+        
         /* Examine JPEG markers. */
         if (exif)
         {
@@ -587,12 +551,11 @@ load_jpg_file (std::string const& filename, std::string* exif)
                 exif->append(data, data + marker->data_length);
             }
         }
-        std::cout << "after markers examine  image io" << std::endl;
+        
 
         if (cinfo.out_color_space != JCS_GRAYSCALE
             && cinfo.out_color_space != JCS_RGB)
             throw util::Exception("Invalid JPEG color space");
-        std::cout << "after color space  image io" << std::endl;
 
         /* Create image. */
         int const width = cinfo.image_width;
@@ -603,8 +566,7 @@ load_jpg_file (std::string const& filename, std::string* exif)
 
         /* Start decompression. */
         jpeg_start_decompress(&cinfo);
-        std::cout << "after start decompression  image io" << std::endl;
-
+      
         unsigned char* data_ptr = &data[0];
         while (cinfo.output_scanline < cinfo.output_height)
         {
@@ -612,7 +574,6 @@ load_jpg_file (std::string const& filename, std::string* exif)
             data_ptr += channels * cinfo.output_width;
         }
 
-        std::cout<<"jpeg decompression image io before "<<std::endl;
 
         /* Shutdown JPEG decompression. */
         jpeg_finish_decompress(&cinfo);
@@ -621,7 +582,7 @@ load_jpg_file (std::string const& filename, std::string* exif)
     }
     catch (...)
     {
-        std::cout<<"error in the load jpg function image io"<<std::endl;
+    
         jpeg_destroy_decompress(&cinfo);
         std::fclose(fp);
         throw;
@@ -634,7 +595,6 @@ ImageHeaders
 load_jpg_file_headers (std::string const& filename)
 {
 
-    std::cout << "after load jpg file headers image io" << std::endl;
 
     FILE* fp = std::fopen(filename.c_str(), "rb");
     if (fp == nullptr)
@@ -653,18 +613,9 @@ load_jpg_file_headers (std::string const& filename)
         jerr.err.error_exit = &jpg_error_handler;
         jerr.err.emit_message = &jpg_message_handler;
         if (setjmp(jerr.setjmp_buffer)) {
-                //ostringstream oss;
-               // jpeg_destroy_decompress(&cinfo);
-               // std::fclose(fp);
-                std::cout << "Error in jump jpg header image io " << std::endl;
                 throw util::Exception("Jump Exception JPEG header error ");
         }
 
-
-
-/*cinfo.err = jpeg_std_error(&jerr);
-        jerr.error_exit = &jpg_error_handler;
-        jerr.emit_message = &jpg_message_handler;*/
         jpeg_create_decompress(&cinfo);
         jpeg_stdio_src(&cinfo, fp);
 
@@ -687,8 +638,7 @@ load_jpg_file_headers (std::string const& filename)
     }
     catch (...)
     {
-        std::cout << "after jpeg file headers error  image io" << std::endl;
-
+       
         jpeg_destroy_decompress(&cinfo);
         std::fclose(fp);
         throw;
@@ -701,7 +651,7 @@ load_jpg_file_headers (std::string const& filename)
 void
 save_jpg_file (ByteImage::ConstPtr image, std::string const& filename, int quality)
 {
-    std::cout << "save jpg file " <<  filename << std::endl;
+    
     if (image == nullptr)
         throw std::invalid_argument("Null image given");
 
@@ -761,12 +711,9 @@ tiffErrMgr tiff_err_manager;
 
 void
 tiff_error_handler (char const* /*module*/, char const* fmt, va_list ap)
-{
-    //char msg[2048];
-    ::vsprintf(tiff_err_manager.msg, fmt, ap);
-    //tiff_err_manager.msg = msg;
-    longjmp(tiff_err_manager.setjmp_buffer_tiff , 1);
-    //throw util::Exception(msg);
+{   
+    ::vsprintf(tiff_err_manager.msg, fmt, ap);    
+    longjmp(tiff_err_manager.setjmp_buffer_tiff , 1);   
 }
 
 ImageHeaders
@@ -776,12 +723,10 @@ load_tiff_file_headers (std::string const& filename)
     TIFFSetWarningHandler(nullptr);
     TIFFSetErrorHandler(tiff_error_handler);
     if(setjmp(tiff_err_manager.setjmp_buffer_tiff)){
-	std::cout << "tiff header set jmp exception thrown " << filename <<  std::endl;
 	throw util::Exception(tiff_err_manager.msg);	
     }
 
 
-    std::cout << "tif file header funtion " << filename << std::endl;
     TIFF* tif = TIFFOpen(filename.c_str(), "r");
     if (tif == nullptr)
         throw util::FileException(filename, "TIFF file format not recognized");
